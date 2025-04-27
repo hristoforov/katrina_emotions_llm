@@ -3,6 +3,7 @@ import json
 import time
 import csv
 from typing import List, Dict, Tuple
+from sklearn.metrics import classification_report, confusion_matrix
 import os
 
 # Debug flag to control console output
@@ -110,7 +111,9 @@ def evaluate_model(test_data: List[Tuple[str, str]]) -> Dict:
     confusion_matrix = {e: {e2: 0 for e2 in EMOTIONS} for e in EMOTIONS}
     
     start_time = time.time()
-    
+    predictions = []
+    true_labels = []
+
     for i, (text, true_emotion) in enumerate(test_data):
         if INFO:
             print(f"\nProcessing sample {i+1}/{total}")
@@ -131,8 +134,11 @@ def evaluate_model(test_data: List[Tuple[str, str]]) -> Dict:
         elif DEBUG:
             print(f"Debug - Skipping confusion matrix update for invalid emotions: true={true_emotion}, predicted={predicted}")
         
+        predictions.append(predicted)
+        true_labels.append(true_emotion)
+
         # Add a small delay to avoid overwhelming the API
-        time.sleep(0.1)
+        #time.sleep(0.1)
     
     end_time = time.time()
     total_time = end_time - start_time
@@ -146,7 +152,9 @@ def evaluate_model(test_data: List[Tuple[str, str]]) -> Dict:
         'correct_predictions': correct,
         'total_time_seconds': total_time,
         'avg_time_per_sample': avg_time,
-        'confusion_matrix': confusion_matrix
+        'confusion_matrix': confusion_matrix,
+        'true_labels' : true_labels,
+        'predictions' : predictions
     }
 
 def save_results(results: Dict, output_file: str):
@@ -188,6 +196,13 @@ def main():
     print(f"Correct Predictions: {results['correct_predictions']}")
     print(f"Total Time: {results['total_time_seconds']:.2f} seconds")
     print(f"Average Time per Sample: {results['avg_time_per_sample']:.4f} seconds")
+    # Print classification report
+    print("\nClassification Report:")
+    print(classification_report(results['true_labels'], results['predictions']))
+    
+    # Print confusion matrix
+    print("\nConfusion Matrix:")
+    print(confusion_matrix(results['true_labels'], results['predictions']))
     
     # Save results
     output_file = 'emotion_analysis_results.csv'
